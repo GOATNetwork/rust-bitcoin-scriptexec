@@ -1,0 +1,4 @@
+OP_1
+OP_2
+OP_CAT
+OP_SHA256
