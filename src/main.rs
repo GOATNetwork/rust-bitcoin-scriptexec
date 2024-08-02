@@ -22,6 +22,9 @@ struct Args {
     /// Whether to output result in JSON.
     #[arg(long)]
     json: bool,
+    /// script type
+    #[arg(long)]
+    script_type: i32,
 }
 
 /// A wrapper for the stack types to print them better.
@@ -48,8 +51,15 @@ fn inner_main() -> Result<(), String> {
     println!("Script size: {} bytes", script.as_bytes().len());
 
     let start = std::time::Instant::now();
+
+    let st = match args.script_type {
+        0 => ExecCtx::Legacy,
+        1 => ExecCtx::SegwitV0,
+        _ => ExecCtx::Tapscript,
+    };
+
     let mut exec = Exec::new(
-        ExecCtx::Tapscript,
+        st,
         Options::default(),
         TxTemplate {
             tx: Transaction {

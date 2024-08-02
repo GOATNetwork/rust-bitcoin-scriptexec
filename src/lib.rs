@@ -985,6 +985,9 @@ impl Exec {
             }
 
             OP_CHECKMULTISIG | OP_CHECKMULTISIGVERIFY => {
+                if self.ctx == ExecCtx::Tapscript {
+                    return Err(ExecError::TapscriptCheckMultiSig);
+                }
                 if self.stack.len() < 1 {
                     println!("Invalid Stack");
                     return Err(ExecError::StackSize);
