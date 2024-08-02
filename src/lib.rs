@@ -77,8 +77,8 @@ pub struct Options {
     pub verify_csv: bool,
     /// Verify conditionals are minimally encoded.
     pub verify_minimal_if: bool,
-	/// Enfore a strict limit of 1000 total stack items.
-	pub enforce_stack_limit: bool,
+    /// Enfore a strict limit of 1000 total stack items.
+    pub enforce_stack_limit: bool,
 
     pub experimental: Experimental,
 }
@@ -90,7 +90,7 @@ impl Default for Options {
             verify_cltv: true,
             verify_csv: true,
             verify_minimal_if: true,
-			enforce_stack_limit: true,
+            enforce_stack_limit: true,
             experimental: Experimental { op_cat: true },
         }
     }
@@ -985,7 +985,42 @@ impl Exec {
             }
 
             OP_CHECKMULTISIG | OP_CHECKMULTISIGVERIFY => {
-                unimplemented!();
+                if self.stack.len() < 1 {
+                    println!("Invalid Stack");
+                    return Err(ExecError::StackSize);
+                }
+                // n of m
+                let n = self.stack.popnum(false)?.clone();
+                let mut pubkeys = vec![];
+                for _i in 0..n {
+                    pubkeys.push(self.stack.popstr()?.clone());
+                }
+
+                let m = self.stack.popnum(false)?;
+
+                let mut sigs = vec![];
+                for _i in 0..m {
+                    sigs.push(self.stack.popstr()?.clone());
+                }
+
+                //  OP_CHECKMULTISIG bug
+                self.stack.pop().unwrap();
+
+                let mut res = true;
+                for sig in sigs {
+                    for i in 0..pubkeys.len() {
+                        let pubkey = &pubkeys[i];
+                        if self.check_sig(&sig, pubkey)? {
+                            pubkeys.swap_remove(i);
+                            break;
+                        }
+                        res = false;
+                    }
+                }
+                if op == OP_CHECKMULTISIG {
+                    let res = if res { 1 } else { 0 };
+                    self.stack.pushnum(res);
+                }
             }
 
             // remainder
